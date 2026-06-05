@@ -5,6 +5,7 @@
 const App = {
   data: null,
   cardsByAlias: {},
+  homeGlobe: null,
 };
 
 // ============ 工具 ============
@@ -77,7 +78,20 @@ function renderObsidianMarkdown(md, ctx = {}) {
     /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
     (_, code) => `<div class="mermaid">${decodeHtmlEntities(code)}</div>`
   );
+  // 7) 少量嵌套 callout / blockquote 会绕过 marked 的内联解析，这里补偿残留的 **加粗** / *斜体*。
+  html = renderResidualInlineMarkdown(html);
   return html;
+}
+
+function renderResidualInlineMarkdown(html) {
+  return String(html || '').replace(/>([^<]+)</g, (match, text) => {
+    if (!/[*_`]/.test(text)) return match;
+    const rendered = text
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+    return `>${rendered}<`;
+  });
 }
 
 function decodeHtmlEntities(s) {
@@ -318,8 +332,13 @@ function renderInline(text) {
 function renderHome() {
   const meta = App.data.meta;
   const tbs = App.data.textbooks;
+  const modules = Object.values(tbs);
+  const totalSections = modules.reduce((s, tb) => s + tb.chapters.reduce((a, c) => a + c.sections.length, 0), 0);
+  const totalChapters = modules.reduce((s, tb) => s + tb.chapters.length, 0);
+  const canvasCount = modules.reduce((s, tb) => s + tb.chapters.reduce((a, ch) => a + ch.sections.filter(sec => sec.canvas).length, 0), 0);
+  const examCount = App.data.summary?.counts?.exam || App.data.records.filter(r => r.kind === 'exam').length;
 
-  const tbCards = Object.values(tbs).map(tb => {
+  const tbCards = modules.map(tb => {
     const total = tb.chapters.reduce((s, c) => s + c.sections.length, 0);
     const list = tb.chapters.map(ch => {
       const secsHtml = ch.sections.length
@@ -343,26 +362,66 @@ function renderHome() {
     `;
   }).join('');
 
+  const modulePills = modules.map(tb => {
+    const total = tb.chapters.reduce((s, c) => s + c.sections.length, 0);
+    return `<span class="module-pill">${escapeHtml(tb.name)}<strong>${total}</strong></span>`;
+  }).join('');
+
   return `
-    <div class="home-hero">
-      <h1>🌏 ${escapeHtml(meta.title)}</h1>
-      <p>${escapeHtml(meta.subtitle)}</p>
-      <p style="margin-top:10px;color:var(--text-muted);font-size:13px;">为高中地理课堂设计的原子知识卡片体系——一个概念一张卡，多张卡片合成讲义。</p>
-      <div class="home-stats">
-        <div class="stat">
-          <div class="stat-num">${meta.card_count}</div>
-          <div class="stat-label">原子卡片</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">${meta.textbook_count}</div>
-          <div class="stat-label">教材模块</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">${Object.values(tbs).reduce((s,tb) => s + tb.chapters.reduce((a,c)=>a+c.sections.length,0), 0)}</div>
-          <div class="stat-label">教学课时 MOC</div>
+    <section class="home-hero">
+      <div class="hero-copy">
+        <div class="hero-kicker">Gaokao Geography Atlas</div>
+        <h1>${escapeHtml(meta.title)}</h1>
+        <p class="hero-lead">${escapeHtml(meta.subtitle)}</p>
+        <p class="hero-sub">围绕高中地理课堂、复习和高考题型组织的知识地图：章节讲义负责线性学习，白板视图负责关系理解，原子卡片负责长期复用。</p>
+        <div class="home-stats">
+          <div class="stat">
+            <div class="stat-num">${meta.card_count}</div>
+            <div class="stat-label">原子卡片</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${totalSections}</div>
+            <div class="stat-label">教学课时</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${canvasCount}</div>
+            <div class="stat-label">知识白板</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${examCount}</div>
+            <div class="stat-label">高考题卡</div>
+          </div>
         </div>
       </div>
-    </div>
+      <div class="hero-visual" aria-label="旋转地球模型">
+        <canvas id="home-globe" width="420" height="420"></canvas>
+        <div class="globe-caption">
+          <span>自然地理</span>
+          <span>人文地理</span>
+          <span>区域认知</span>
+        </div>
+      </div>
+    </section>
+    <section class="home-overview">
+      <div class="overview-panel">
+        <div class="panel-title">教材模块</div>
+        <div class="module-pills">${modulePills}</div>
+      </div>
+      <div class="overview-panel">
+        <div class="panel-title">学习路径</div>
+        <div class="learning-flow">
+          <span>章节导学</span><span>白板关系</span><span>知识卡片</span><span>真题迁移</span>
+        </div>
+      </div>
+    </section>
+    <section class="exam-panel">
+      <div>
+        <div class="panel-title">高考题库</div>
+        <h2>真题卡片与知识卡片联动复习</h2>
+        <p>已整理 ${examCount} 张高考题卡，可通过搜索框检索年份、省份、题目关键词，并与章节讲义和知识卡片互相参照。</p>
+      </div>
+      <a class="exam-link wikilink" data-route="#/cards">进入卡片索引</a>
+    </section>
     <div class="home-tb-grid">${tbCards}</div>
     <div style="text-align:center; color:var(--text-muted); font-size:12.5px; margin-top:20px;">
       构建时间 · ${escapeHtml(meta.build_time)}
@@ -824,12 +883,132 @@ function route() {
   }
 
   content.innerHTML = html;
+  content.classList.toggle('home-content', hash === '#/' || hash === '#');
   crumbs.innerHTML = crumbHtml;
   window.scrollTo(0, 0);
   updateActiveSidebar();
   bindContentInteractions();
   renderMermaidIfAny();
   initCanvasIfAny();
+  initHomeGlobeIfAny();
+}
+
+function initHomeGlobeIfAny() {
+  const canvas = document.getElementById('home-globe');
+  if (!canvas) {
+    if (App.homeGlobe) App.homeGlobe.stop();
+    App.homeGlobe = null;
+    return;
+  }
+  if (App.homeGlobe && App.homeGlobe.canvas === canvas) return;
+  if (App.homeGlobe) App.homeGlobe.stop();
+  App.homeGlobe = createHomeGlobe(canvas);
+}
+
+function createHomeGlobe(canvas) {
+  const ctx = canvas.getContext('2d');
+  let raf = 0;
+  let angle = 0;
+  const land = [
+    [[-168,70],[-138,58],[-125,42],[-105,30],[-88,20],[-70,10],[-58,-5],[-64,-24],[-74,-50],[-84,-55],[-96,-42],[-108,-15],[-124,8],[-145,32],[-168,55]],
+    [[-82,12],[-65,8],[-52,-8],[-48,-24],[-58,-40],[-70,-54],[-78,-36],[-84,-14]],
+    [[-18,36],[4,52],[34,56],[62,42],[78,24],[56,8],[44,-18],[28,-34],[12,-34],[-6,-20],[-16,6]],
+    [[-18,32],[6,34],[28,18],[34,-2],[28,-22],[16,-34],[2,-28],[-10,-4]],
+    [[42,36],[68,54],[104,58],[136,48],[154,28],[132,10],[112,-8],[96,-2],[82,20],[62,18]],
+    [[100,8],[116,2],[124,-18],[112,-36],[96,-28],[92,-8]],
+    [[112,-12],[154,-20],[162,-38],[142,-46],[118,-34]],
+    [[-180,-62],[-120,-70],[-40,-66],[42,-72],[120,-66],[180,-62],[180,-88],[-180,-88]],
+  ];
+
+  function project(lon, lat, radius, cx, cy) {
+    const lambda = (lon * Math.PI / 180) + angle;
+    const phi = lat * Math.PI / 180;
+    const cosPhi = Math.cos(phi);
+    const x = radius * cosPhi * Math.sin(lambda);
+    const y = -radius * Math.sin(phi);
+    const z = cosPhi * Math.cos(lambda);
+    return { x: cx + x, y: cy + y, visible: z > -0.18, z };
+  }
+
+  function drawLine(points, radius, cx, cy, color, width) {
+    ctx.beginPath();
+    let started = false;
+    for (const [lon, lat] of points) {
+      const p = project(lon, lat, radius, cx, cy);
+      if (!p.visible) { started = false; continue; }
+      if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+      else ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  }
+
+  function frame() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const size = Math.min(canvas.clientWidth || 420, canvas.clientHeight || 420);
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size * 0.38;
+
+    const glow = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.45, r * 0.1, cx, cy, r * 1.35);
+    glow.addColorStop(0, 'rgba(255,255,255,.92)');
+    glow.addColorStop(0.38, 'rgba(105,178,191,.76)');
+    glow.addColorStop(0.72, 'rgba(28,92,123,.95)');
+    glow.addColorStop(1, 'rgba(15,34,52,.88)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    for (let lat = -60; lat <= 60; lat += 20) {
+      const pts = [];
+      for (let lon = -180; lon <= 180; lon += 4) pts.push([lon, lat]);
+      drawLine(pts, r, cx, cy, 'rgba(231,246,241,.28)', 1);
+    }
+    for (let lon = -150; lon <= 180; lon += 30) {
+      const pts = [];
+      for (let lat = -80; lat <= 80; lat += 4) pts.push([lon, lat]);
+      drawLine(pts, r, cx, cy, 'rgba(231,246,241,.2)', 1);
+    }
+    for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(204,225,169,.82)', 8);
+    for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(42,105,76,.95)', 3);
+
+    const shade = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+    shade.addColorStop(0, 'rgba(2,16,28,.42)');
+    shade.addColorStop(0.52, 'rgba(2,16,28,0)');
+    shade.addColorStop(1, 'rgba(255,255,255,.18)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,.58)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(184,134,11,.32)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * 1.23, r * 0.24, -0.34, 0, Math.PI * 2);
+    ctx.stroke();
+
+    angle += 0.006;
+    raf = requestAnimationFrame(frame);
+  }
+
+  raf = requestAnimationFrame(frame);
+  return { canvas, stop: () => cancelAnimationFrame(raf) };
 }
 
 // ============ 内容交互 ============
@@ -849,7 +1028,7 @@ function bindContentInteractions() {
   });
 
   // 顶栏
-  $$('#topbar [data-route]').forEach(el => {
+  $$('[data-route]').forEach(el => {
     el.onclick = () => { location.hash = el.dataset.route; };
   });
 
