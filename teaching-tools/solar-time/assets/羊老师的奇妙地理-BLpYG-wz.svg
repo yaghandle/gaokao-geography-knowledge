@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- 清新的渐变色 -->
+    <linearGradient id="globeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E0F7FA"/>
+      <stop offset="100%" stop-color="#B2EBF2"/>
+    </linearGradient>
+    <linearGradient id="hornGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="100%" stop-color="#FFCA28"/>
+    </linearGradient>
+    
+    <!-- 网站常用的柔和阴影 -->
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#00BFA5" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <style>
+    /* SVG 内部的 CSS 动画，完美适配网站 */
+    .spin-orbit {
+      transform-origin: 250px 250px;
+      animation: spin 15s linear infinite;
+    }
+    .float-sheep {
+      transform-origin: 250px 250px;
+      animation: float 4s ease-in-out infinite;
+    }
+    .gogo-text {
+      font-family: 'Arial', sans-serif;
+      font-weight: 900;
+      fill: #FF8A80; /* 清新蜜桃粉 */
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .gogo-delay {
+      animation-delay: 1s;
+    }
+    
+    /* 动画关键帧 */
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1) translate(0, 0); }
+      50% { opacity: 1; transform: scale(1.05) translate(-2px, -2px); }
+    }
+  </style>
+
+  <!-- 1. 背景层：动态旋转的指南针/经纬轨道 -->
+  <g class="spin-orbit" filter="url(#softShadow)">
+    <!-- 外层虚线轨道 -->
+    <circle cx="250" cy="250" r="180" fill="none" stroke="#26A69A" stroke-width="4" stroke-dasharray="15 20" opacity="0.6"/>
+    <!-- 轨道上的指南针四极小圆点 -->
+    <circle cx="250" cy="70" r="8" fill="#FFCA28"/>
+    <circle cx="250" cy="430" r="8" fill="#26A69A"/>
+    <circle cx="70" cy="250" r="8" fill="#26A69A"/>
+    <circle cx="430" cy="250" r="8" fill="#26A69A"/>
+  </g>
+
+  <!-- 2. 中间层：清新的地球仪基底 -->
+  <g filter="url(#softShadow)">
+    <circle cx="250" cy="240" r="110" fill="url(#globeGrad)" stroke="#2D3436" stroke-width="6"/>
+    <!-- 地球经纬线 (简化版，更符合Logo特征) -->
+    <ellipse cx="250" cy="240" rx="50" ry="110" fill="none" stroke="#2D3436" stroke-width="4" opacity="0.3"/>
+    <ellipse cx="250" cy="240" rx="110" ry="40" fill="none" stroke="#2D3436" stroke-width="4" opacity="0.3"/>
+  </g>
+
+  <!-- 3. JOJO灵魂：漂浮的 ゴゴゴゴ (分布在对角线) -->
+  <g class="gogo-text" transform="translate(60, 150) rotate(-15)">
+    <text x="0" y="0" font-size="36">ゴ</text>
+    <text x="30" y="-30" font-size="44">ゴ</text>
+  </g>
+  <g class="gogo-text gogo-delay" transform="translate(380, 400) rotate(15)">
+    <text x="0" y="0" font-size="44">ゴ</text>
+    <text x="30" y="-30" font-size="36">ゴ</text>
+  </g>
+
+  <!-- 4. 核心前景：上下浮动的"老羊" (化繁为简的萌系/自信设计) -->
+  <g class="float-sheep" filter="url(#softShadow)">
+    
+    <!-- 羊角 (左) -->
+    <path d="M 180 230 C 130 200, 110 270, 150 300 C 170 315, 190 280, 180 260" fill="url(#hornGrad)" stroke="#2D3436" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- 羊角 (右) -->
+    <path d="M 320 230 C 370 200, 390 270, 350 300 C 330 315, 310 280, 320 260" fill="url(#hornGrad)" stroke="#2D3436" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- 羊的云朵羊毛 (头部后方) -->
+    <path d="M 250 160 A 40 40 0 0 0 200 190 A 45 45 0 0 0 160 250 A 45 45 0 0 0 190 310 L 310 310 A 45 45 0 0 0 340 250 A 45 45 0 0 0 300 190 A 40 40 0 0 0 250 160 Z" fill="#FFFFFF" stroke="#2D3436" stroke-width="6" stroke-linejoin="round"/>
+
+    <!-- 羊脸 (温柔圆润的胶囊形) -->
+    <rect x="195" y="215" width="110" height="85" rx="42.5" fill="#FAFAFA" stroke="#2D3436" stroke-width="6"/>
+
+    <!-- 眼睛 (自信而惬意的 ^ ^ 形状，代表轻松学地理) -->
+    <path d="M 220 245 Q 230 235 240 245" fill="none" stroke="#2D3436" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 260 245 Q 270 235 280 245" fill="none" stroke="#2D3436" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- 鼻子和嘴巴 (小巧可爱) -->
+    <path d="M 245 265 L 255 265 L 250 272 Z" fill="#2D3436"/>
+    <path d="M 250 272 Q 250 285 240 280 M 250 272 Q 250 285 260 280" fill="none" stroke="#2D3436" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- 🌟 JOJO 标志性乔斯达星型印记 (放在脸颊旁，俏皮且有梗) -->
+    <polygon points="215,270 218,276 225,276 219,281 221,288 215,284 209,288 211,281 205,276 212,276" fill="#FF8A80" stroke="#2D3436" stroke-width="2" stroke-linejoin="round"/>
+    
+    <!-- 腮红 (右侧) -->
+    <ellipse cx="285" cy="275" rx="8" ry="5" fill="#FF8A80" opacity="0.4"/>
+  </g>
+</svg>

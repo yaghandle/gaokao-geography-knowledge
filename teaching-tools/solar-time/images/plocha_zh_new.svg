@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- 1. 草地基础底色（从阳光照射的明绿到边缘的深绿） -->
+    <radialGradient id="grassGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#86efac" />   <!-- 中心明亮的嫩绿 -->
+      <stop offset="30%" stop-color="#4ade80" />  <!-- 生机勃勃的草绿 -->
+      <stop offset="75%" stop-color="#16a34a" />  <!-- 饱满的中绿 -->
+      <stop offset="100%" stop-color="#064e3b" /> <!-- 边缘深邃的暗绿 -->
+    </radialGradient>
+
+    <!-- 2. 二次元风格的草叶与野花纹理 -->
+    <pattern id="grassPattern" width="60" height="60" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <!-- 草丛 1 -->
+      <path d="M15,30 Q22,10 30,30 Q22,20 15,30 Z" fill="#22c55e" opacity="0.4"/>
+      <path d="M5,30 Q12,15 15,30 Z" fill="#15803d" opacity="0.3"/>
+      <!-- 草丛 2 -->
+      <path d="M40,50 Q45,35 50,50 Q45,45 40,50 Z" fill="#86efac" opacity="0.2"/>
+      <!-- 小野花 -->
+      <circle cx="10" cy="10" r="1.5" fill="#fef08a" opacity="0.8"/> <!-- 小黄花 -->
+      <circle cx="45" cy="20" r="1.2" fill="#ffffff" opacity="0.7"/> <!-- 小白花 -->
+      <circle cx="25" cy="45" r="1" fill="#fef08a" opacity="0.6"/>   <!-- 小黄花 -->
+    </pattern>
+
+    <!-- 3. 文字与箭头的清晰阴影 (防止被背景吃掉) -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.65"/>
+    </filter>
+  </defs>
+
+  <!-- === 背景层 === -->
+  <!-- 草地底色 -->
+  <circle cx="250" cy="250" r="250" fill="url(#grassGrad)" />
+  <!-- 草地纹理叠加 -->
+  <circle cx="250" cy="250" r="250" fill="url(#grassPattern)" />
+
+  <!-- === 辅助 UI 层 === -->
+  <!-- 角色站立的中心高光区 -->
+  <circle cx="250" cy="250" r="120" fill="#ffffff" opacity="0.06" />
+  <!-- 中心定位辅助虚线 (方便你对齐小人模型) -->
+  <circle cx="250" cy="250" r="40" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.15" stroke-dasharray="6 4"/>
+  <circle cx="250" cy="250" r="2" fill="#ffffff" opacity="0.4" />
+  <!-- 外围装饰细圈 -->
+  <circle cx="250" cy="250" r="235" fill="none" stroke="#86efac" stroke-width="2" opacity="0.2" stroke-dasharray="15 8" />
+
+  <!-- === 核心指示层 (红箭头 + 白字) === -->
+  <g filter="url(#shadow)">
+    <!-- 北 (上方) -->
+    <!-- 精致的箭头设计 -->
+    <polygon points="250,12 265,35 250,28 235,35" fill="#ef4444" />
+    <polygon points="250,12 265,35 250,28 235,35" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+    <text x="250" y="75" fill="#ffffff" font-size="44" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-weight="bold" text-anchor="middle" dominant-baseline="central">北</text>
+
+    <!-- 南 (下方) -->
+    <polygon points="250,488 235,465 250,472 265,465" fill="#ef4444" />
+    <polygon points="250,488 235,465 250,472 265,465" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+    <text x="250" y="425" fill="#ffffff" font-size="44" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-weight="bold" text-anchor="middle" dominant-baseline="central">南</text>
+
+    <!-- 东 (右侧) -->
+    <polygon points="488,250 465,235 472,250 465,265" fill="#ef4444" />
+    <polygon points="488,250 465,235 472,250 465,265" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+    <text x="425" y="250" fill="#ffffff" font-size="44" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-weight="bold" text-anchor="middle" dominant-baseline="central">东</text>
+
+    <!-- 西 (左侧) -->
+    <polygon points="12,250 35,265 28,250 35,235" fill="#ef4444" />
+    <polygon points="12,250 35,265 28,250 35,235" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+    <text x="75" y="250" fill="#ffffff" font-size="44" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-weight="bold" text-anchor="middle" dominant-baseline="central">西</text>
+  </g>
+
+</svg>

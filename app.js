@@ -5,8 +5,6 @@
 const App = {
   data: null,
   cardsByAlias: {},
-  homeGlobe: null,
-  earthTexture: null,
 };
 
 // ============ 工具 ============
@@ -394,14 +392,6 @@ function renderHome() {
           </div>
         </div>
       </div>
-      <div class="hero-visual" aria-label="旋转地球模型">
-        <canvas id="home-globe" width="420" height="420"></canvas>
-        <div class="globe-caption">
-          <span>自然地理</span>
-          <span>人文地理</span>
-          <span>区域认知</span>
-        </div>
-      </div>
     </section>
     <section class="home-overview">
       <div class="overview-panel">
@@ -415,6 +405,14 @@ function renderHome() {
         </div>
       </div>
     </section>
+    <section class="teaching-module-panel">
+      <div>
+        <div class="panel-title">地理教学系统模块</div>
+        <h2>把抽象地理过程变成可操作的课堂演示</h2>
+        <p>已接入太阳时与地球运动模型。后续可继续加入气候、地貌、水文、人口与城市等交互式地理模拟。</p>
+      </div>
+      <a class="teaching-module-link wikilink" data-route="#/teaching-systems">进入教学系统</a>
+    </section>
     <section class="exam-panel">
       <div>
         <div class="panel-title">高考题库</div>
@@ -427,6 +425,36 @@ function renderHome() {
     <div style="text-align:center; color:var(--text-muted); font-size:12.5px; margin-top:20px;">
       构建时间 · ${escapeHtml(meta.build_time)}
     </div>
+  `;
+}
+
+function renderTeachingSystems() {
+  return `
+    <section class="teaching-system-page">
+      <div class="teaching-system-hero">
+        <div>
+          <div class="hero-kicker">Interactive Geography Lab</div>
+          <h1>地理教学系统模块</h1>
+          <p>收纳适合课堂演示、学生探究和复习巩固的地理模拟工具。当前模块先接入太阳时与地球运动模型，后续可以继续扩展更多专题模拟。</p>
+        </div>
+        <div class="teaching-system-stat">
+          <strong>1</strong>
+          <span>已接入模拟</span>
+        </div>
+      </div>
+
+      <div class="teaching-tool-card">
+        <div class="teaching-tool-head">
+          <div>
+            <div class="panel-title">天文地理</div>
+            <h2>太阳时与地球运动模型</h2>
+            <p>用于观察地球自转、太阳照射、经度差异与地方时关系，适合配合“地球运动”“时间计算”相关内容进行演示。</p>
+          </div>
+          <a class="teaching-tool-open" href="teaching-tools/solar-time/index.html" target="_blank" rel="noopener">单独打开</a>
+        </div>
+        <iframe class="teaching-tool-frame" src="teaching-tools/solar-time/index.html" title="太阳时与地球运动模型" loading="lazy"></iframe>
+      </div>
+    </section>
   `;
 }
 
@@ -966,6 +994,9 @@ function route() {
   } else if (hash === '#/exams') {
     html = renderExamsIndex();
     crumbHtml = '<a href="#/">首页</a> <span class="sep">/</span> 🧾 高考题库';
+  } else if (hash === '#/teaching-systems') {
+    html = renderTeachingSystems();
+    crumbHtml = '<a href="#/">首页</a> <span class="sep">/</span> 🌐 地理教学系统模块';
   } else {
     const mSec = hash.match(/^#\/section\/([^/]+)\/([^/?]+)(?:\?view=([a-z]+))?$/);
     const mCard = hash.match(/^#\/card\/(.+)$/);
@@ -998,167 +1029,6 @@ function route() {
   bindContentInteractions();
   renderMermaidIfAny();
   initCanvasIfAny();
-  initHomeGlobeIfAny();
-}
-
-function initHomeGlobeIfAny() {
-  const canvas = document.getElementById('home-globe');
-  if (!canvas) {
-    if (App.homeGlobe) App.homeGlobe.stop();
-    App.homeGlobe = null;
-    return;
-  }
-  if (App.homeGlobe && App.homeGlobe.canvas === canvas) return;
-  if (App.homeGlobe) App.homeGlobe.stop();
-  App.homeGlobe = createHomeGlobe(canvas);
-}
-
-function loadEarthTexture() {
-  if (App.earthTexture) return App.earthTexture;
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.dataset.fallbackTried = '0';
-  img.onerror = () => {
-    if (img.dataset.fallbackTried === '1') return;
-    img.dataset.fallbackTried = '1';
-    img.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/1280px-Land_shallow_topo_2048.jpg';
-  };
-  img.src = 'static/earth-blue-marble.jpg';
-  App.earthTexture = img;
-  return img;
-}
-
-function createHomeGlobe(canvas) {
-  const ctx = canvas.getContext('2d');
-  let raf = 0;
-  let angle = 0;
-  const texture = loadEarthTexture();
-  const land = [
-    [[-168,70],[-138,58],[-125,42],[-105,30],[-88,20],[-70,10],[-58,-5],[-64,-24],[-74,-50],[-84,-55],[-96,-42],[-108,-15],[-124,8],[-145,32],[-168,55]],
-    [[-82,12],[-65,8],[-52,-8],[-48,-24],[-58,-40],[-70,-54],[-78,-36],[-84,-14]],
-    [[-18,36],[4,52],[34,56],[62,42],[78,24],[56,8],[44,-18],[28,-34],[12,-34],[-6,-20],[-16,6]],
-    [[-18,32],[6,34],[28,18],[34,-2],[28,-22],[16,-34],[2,-28],[-10,-4]],
-    [[42,36],[68,54],[104,58],[136,48],[154,28],[132,10],[112,-8],[96,-2],[82,20],[62,18]],
-    [[100,8],[116,2],[124,-18],[112,-36],[96,-28],[92,-8]],
-    [[112,-12],[154,-20],[162,-38],[142,-46],[118,-34]],
-    [[-180,-62],[-120,-70],[-40,-66],[42,-72],[120,-66],[180,-62],[180,-88],[-180,-88]],
-  ];
-
-  function project(lon, lat, radius, cx, cy) {
-    const lambda = (lon * Math.PI / 180) + angle;
-    const phi = lat * Math.PI / 180;
-    const cosPhi = Math.cos(phi);
-    const x = radius * cosPhi * Math.sin(lambda);
-    const y = -radius * Math.sin(phi);
-    const z = cosPhi * Math.cos(lambda);
-    return { x: cx + x, y: cy + y, visible: z > -0.18, z };
-  }
-
-  function drawLine(points, radius, cx, cy, color, width) {
-    ctx.beginPath();
-    let started = false;
-    for (const [lon, lat] of points) {
-      const p = project(lon, lat, radius, cx, cy);
-      if (!p.visible) { started = false; continue; }
-      if (!started) { ctx.moveTo(p.x, p.y); started = true; }
-      else ctx.lineTo(p.x, p.y);
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.stroke();
-  }
-
-  function frame() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = Math.min(canvas.clientWidth || 420, canvas.clientHeight || 420);
-    canvas.width = Math.round(size * dpr);
-    canvas.height = Math.round(size * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, size, size);
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = size * 0.38;
-
-    const glow = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.45, r * 0.1, cx, cy, r * 1.35);
-    glow.addColorStop(0, 'rgba(255,255,255,.92)');
-    glow.addColorStop(0.38, 'rgba(105,178,191,.76)');
-    glow.addColorStop(0.72, 'rgba(28,92,123,.95)');
-    glow.addColorStop(1, 'rgba(15,34,52,.88)');
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-
-    if (texture.complete && texture.naturalWidth) {
-      const step = Math.max(2, Math.round(size / 140));
-      for (let y = -r; y <= r; y += step) {
-        const half = Math.sqrt(Math.max(0, r * r - y * y));
-        for (let x = -half; x <= half; x += step) {
-          const nx = x / r;
-          const ny = y / r;
-          const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
-          const lat = Math.asin(-ny);
-          const lon = Math.atan2(nx, nz) - angle;
-          const u = ((lon / (Math.PI * 2) + 0.5) % 1 + 1) % 1;
-          const v = lat / Math.PI + 0.5;
-          const sx = Math.floor(u * texture.naturalWidth);
-          const sy = Math.floor(v * texture.naturalHeight);
-          const light = 0.62 + 0.38 * nz;
-          ctx.globalAlpha = light;
-          ctx.drawImage(texture, sx, sy, 1, 1, cx + x, cy + y, step + 1, step + 1);
-        }
-      }
-      ctx.globalAlpha = 1;
-    } else {
-      for (let lat = -60; lat <= 60; lat += 20) {
-        const pts = [];
-        for (let lon = -180; lon <= 180; lon += 4) pts.push([lon, lat]);
-        drawLine(pts, r, cx, cy, 'rgba(231,246,241,.28)', 1);
-      }
-      for (let lon = -150; lon <= 180; lon += 30) {
-        const pts = [];
-        for (let lat = -80; lat <= 80; lat += 4) pts.push([lon, lat]);
-        drawLine(pts, r, cx, cy, 'rgba(231,246,241,.2)', 1);
-      }
-      for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(204,225,169,.82)', 8);
-      for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(42,105,76,.95)', 3);
-    }
-
-    const shade = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
-    shade.addColorStop(0, 'rgba(2,16,28,.42)');
-    shade.addColorStop(0.52, 'rgba(2,16,28,0)');
-    shade.addColorStop(1, 'rgba(255,255,255,.18)');
-    ctx.fillStyle = shade;
-    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-    ctx.restore();
-
-    ctx.strokeStyle = 'rgba(255,255,255,.58)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(184,134,11,.32)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, r * 1.23, r * 0.24, -0.34, 0, Math.PI * 2);
-    ctx.stroke();
-
-    angle += 0.006;
-    raf = requestAnimationFrame(frame);
-  }
-
-  raf = requestAnimationFrame(frame);
-  texture.onload = () => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(frame);
-  };
-  return { canvas, stop: () => cancelAnimationFrame(raf) };
 }
 
 // ============ 内容交互 ============
