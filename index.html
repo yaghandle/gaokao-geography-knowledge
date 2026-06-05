@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>高中地理知识库</title>
+  <meta name="description" content="面向高中地理学习、备课和高考复习的开放知识站。">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="#/">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>
+          <strong>高中地理知识库</strong>
+          <small>教学地图与题库</small>
+        </span>
+      </a>
+      <label class="search">
+        <span>搜索</span>
+        <input id="searchInput" type="search" placeholder="概念、章节、年份、考点">
+      </label>
+      <div id="searchResults" class="search-results"></div>
+      <nav class="nav" aria-label="站点导航">
+        <a href="#/" data-nav="home">总览</a>
+        <a href="#/learn" data-nav="learn">课程体系</a>
+        <a href="#/cards" data-nav="cards">知识卡片</a>
+        <a href="#/exams" data-nav="exams">高考题库</a>
+        <a href="#/topics" data-nav="topics">专题复习</a>
+      </nav>
+      <div id="siteStats" class="site-stats"></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div id="crumbs" class="crumbs">总览</div>
+        <div class="top-actions">
+          <button id="themeButton" class="icon-button" title="切换明暗主题" aria-label="切换明暗主题">◐</button>
+        </div>
+      </header>
+      <article id="app" class="content" tabindex="-1"></article>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
