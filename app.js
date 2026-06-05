@@ -1,5 +1,5 @@
 /* ============================================================
-   小奈の高中地理知识库网站  app.js
+   高中地理知识库网站 app.js
    ============================================================ */
 
 const App = {
@@ -529,7 +529,7 @@ function renderCanvas(canvas) {
       <button data-zoom="reset">100%</button>
       <button data-zoom="in">+</button>
       <span class="zoom-display" id="canvas-zoom-display">100%</span>
-      <span style="margin-left:auto;color:var(--text-muted);font-size:12px">💡 拖动空白处平移，Ctrl+滚轮缩放</span>
+      <span style="margin-left:auto;color:var(--text-muted);font-size:12px">💡 按住白板区域拖动平移，Ctrl+滚轮缩放</span>
     </div>
     <div class="canvas-frame" id="canvas-frame">
       <div class="canvas-wrap" id="canvas-wrap" style="width:${innerW}px;height:${innerH}px;">
@@ -958,11 +958,13 @@ function initCanvasIfAny() {
   // 拖动平移
   let dragging = false, sx = 0, sy = 0, scrollX0 = 0, scrollY0 = 0;
   frame.addEventListener('mousedown', e => {
-    if (e.target.closest('.canvas-node') && !e.target.closest('.group-label')) return;
+    if (e.button !== 0) return;
+    if (e.target.closest('.canvas-toolbar, button, a, input, textarea, select, summary, .wikilink, .open-icon, .callout-title')) return;
     dragging = true;
     sx = e.clientX; sy = e.clientY;
     scrollX0 = frame.scrollLeft; scrollY0 = frame.scrollTop;
     frame.style.cursor = 'grabbing';
+    e.preventDefault();
   });
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
