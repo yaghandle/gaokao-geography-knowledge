@@ -6,6 +6,7 @@ const App = {
   data: null,
   cardsByAlias: {},
   homeGlobe: null,
+  earthTexture: null,
 };
 
 // ============ 工具 ============
@@ -420,7 +421,7 @@ function renderHome() {
         <h2>真题卡片与知识卡片联动复习</h2>
         <p>已整理 ${examCount} 张高考题卡，可通过搜索框检索年份、省份、题目关键词，并与章节讲义和知识卡片互相参照。</p>
       </div>
-      <a class="exam-link wikilink" data-route="#/cards">进入卡片索引</a>
+      <a class="exam-link wikilink" data-route="#/exams">进入高考题库</a>
     </section>
     <div class="home-tb-grid">${tbCards}</div>
     <div style="text-align:center; color:var(--text-muted); font-size:12.5px; margin-top:20px;">
@@ -748,6 +749,105 @@ function renderRelTarget(name) {
   return `<span class="wikilink broken">${escapeHtml(name)}</span>`;
 }
 
+function findRecordByTitle(title) {
+  return (App.data.records || []).find(r => r.title === title) || null;
+}
+
+function renderRecordPage(title) {
+  const record = findRecordByTitle(title);
+  if (!record) return errorHtml(`未找到题卡：${title}`);
+  const bodyHtml = renderObsidianMarkdown(record.body || '', {});
+  const meta = [
+    record.year ? `年份：${escapeHtml(record.year)}` : '',
+    record.province ? `卷别：${escapeHtml(record.province)}` : '',
+    record.groupLabel ? `来源：${escapeHtml(record.groupLabel)}` : '',
+  ].filter(Boolean);
+  return `
+    <div class="exam-record-page">
+      <div class="card-meta-head">
+        <a class="breadcrumb-chip wikilink" data-route="#/exams">🧾 返回高考题库</a>
+        <h1>${escapeHtml(record.title)}</h1>
+        ${meta.length ? `<div class="aliases">${meta.map(m => `<code>${m}</code>`).join('')}</div>` : ''}
+      </div>
+      <div class="paper-card exam-paper-card">
+        <span class="map-corner tl" aria-hidden="true"></span>
+        <span class="map-corner tr" aria-hidden="true"></span>
+        <span class="map-corner bl" aria-hidden="true"></span>
+        <span class="map-corner br" aria-hidden="true"></span>
+        <div class="md-body">${bodyHtml}</div>
+      </div>
+    </div>
+  `;
+}
+
+function examPaperGroups() {
+  const exams = (App.data.records || []).filter(r => r.kind === 'exam');
+  const groups = {};
+  for (const exam of exams) {
+    const year = exam.year || '未知年份';
+    const paper = exam.province || '未知卷别';
+    const key = `${year}|${paper}`;
+    (groups[key] ||= { year, paper, items: [] }).items.push(exam);
+  }
+  return Object.values(groups).sort((a, b) =>
+    String(b.year).localeCompare(String(a.year), 'zh', { numeric: true }) ||
+    a.paper.localeCompare(b.paper, 'zh')
+  );
+}
+
+function examTitleShort(title) {
+  return String(title || '').replace(/^真题_\d{4}_/, '').replace(/_/g, ' · ');
+}
+
+function renderExamsIndex() {
+  const groups = examPaperGroups();
+  const total = groups.reduce((s, g) => s + g.items.length, 0);
+  const years = [...new Set(groups.map(g => g.year))];
+  const yearTags = ['全部', ...years].map((year, i) => {
+    const count = year === '全部' ? groups.length : groups.filter(g => g.year === year).length;
+    return `<span class="filter-tag ${i === 0 ? 'active' : ''}" data-exam-year="${escapeAttr(year)}">${escapeHtml(year)}<span class="count">${count}</span></span>`;
+  }).join('');
+  const groupsHtml = groups.map(group => {
+    const items = group.items
+      .sort((a, b) => a.title.localeCompare(b.title, 'zh', { numeric: true }))
+      .map(item => `
+        <a class="exam-question wikilink" data-target="${escapeAttr(item.title)}" data-kind="record">
+          <span>${escapeHtml(examTitleShort(item.title))}</span>
+          <small>${escapeHtml(item.summary || '题卡')}</small>
+        </a>
+      `).join('');
+    return `
+      <section class="exam-paper" data-exam-year="${escapeAttr(group.year)}">
+        <div class="exam-paper-head">
+          <div>
+            <div class="exam-year">${escapeHtml(group.year)}</div>
+            <h2>${escapeHtml(group.paper)}</h2>
+          </div>
+          <div class="exam-count">${group.items.length} 题卡</div>
+        </div>
+        <div class="exam-question-grid">${items}</div>
+      </section>
+    `;
+  }).join('');
+  return `
+    <div class="exam-page">
+      <div class="exam-hero">
+        <div>
+          <div class="hero-kicker">Exam Papers</div>
+          <h1>高考地理真题库</h1>
+          <p>按年份与卷别汇总 ${groups.length} 套试卷、${total} 张题卡。适合从“整卷回看”进入，再跳转到单题解析与知识卡片。</p>
+        </div>
+        <div class="exam-hero-stat">
+          <strong>${total}</strong>
+          <span>高考题卡</span>
+        </div>
+      </div>
+      <div class="box-filter exam-filter" id="exam-filter">${yearTags}</div>
+      <div class="exam-paper-list" id="exam-paper-list">${groupsHtml}</div>
+    </div>
+  `;
+}
+
 function renderCardsIndex() {
   const allCards = Object.values(App.data.cards);
   // 按 chapter 分组
@@ -863,9 +963,13 @@ function route() {
   } else if (hash === '#/cards') {
     html = renderCardsIndex();
     crumbHtml = '<a href="#/">首页</a> <span class="sep">/</span> 📇 卡片索引';
+  } else if (hash === '#/exams') {
+    html = renderExamsIndex();
+    crumbHtml = '<a href="#/">首页</a> <span class="sep">/</span> 🧾 高考题库';
   } else {
     const mSec = hash.match(/^#\/section\/([^/]+)\/([^/?]+)(?:\?view=([a-z]+))?$/);
     const mCard = hash.match(/^#\/card\/(.+)$/);
+    const mRecord = hash.match(/^#\/record\/(.+)$/);
     if (mSec) {
       const tb = decodeURIComponent(mSec[1]);
       const sid = decodeURIComponent(mSec[2]);
@@ -876,6 +980,10 @@ function route() {
       const title = decodeURIComponent(mCard[1]);
       html = renderCard(title);
       crumbHtml = `<a href="#/">首页</a> <span class="sep">/</span> <a href="#/cards">📇 卡片</a> <span class="sep">/</span> ${escapeHtml(title)}`;
+    } else if (mRecord) {
+      const title = decodeURIComponent(mRecord[1]);
+      html = renderRecordPage(title);
+      crumbHtml = `<a href="#/">首页</a> <span class="sep">/</span> <a href="#/exams">🧾 高考题库</a> <span class="sep">/</span> ${escapeHtml(title)}`;
     } else {
       html = errorHtml(`未识别的路径：${hash}`);
       crumbHtml = '首页';
@@ -905,10 +1013,26 @@ function initHomeGlobeIfAny() {
   App.homeGlobe = createHomeGlobe(canvas);
 }
 
+function loadEarthTexture() {
+  if (App.earthTexture) return App.earthTexture;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.dataset.fallbackTried = '0';
+  img.onerror = () => {
+    if (img.dataset.fallbackTried === '1') return;
+    img.dataset.fallbackTried = '1';
+    img.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/1280px-Land_shallow_topo_2048.jpg';
+  };
+  img.src = 'static/earth-blue-marble.jpg';
+  App.earthTexture = img;
+  return img;
+}
+
 function createHomeGlobe(canvas) {
   const ctx = canvas.getContext('2d');
   let raf = 0;
   let angle = 0;
+  const texture = loadEarthTexture();
   const land = [
     [[-168,70],[-138,58],[-125,42],[-105,30],[-88,20],[-70,10],[-58,-5],[-64,-24],[-74,-50],[-84,-55],[-96,-42],[-108,-15],[-124,8],[-145,32],[-168,55]],
     [[-82,12],[-65,8],[-52,-8],[-48,-24],[-58,-40],[-70,-54],[-78,-36],[-84,-14]],
@@ -970,18 +1094,40 @@ function createHomeGlobe(canvas) {
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
 
-    for (let lat = -60; lat <= 60; lat += 20) {
-      const pts = [];
-      for (let lon = -180; lon <= 180; lon += 4) pts.push([lon, lat]);
-      drawLine(pts, r, cx, cy, 'rgba(231,246,241,.28)', 1);
+    if (texture.complete && texture.naturalWidth) {
+      const step = Math.max(2, Math.round(size / 140));
+      for (let y = -r; y <= r; y += step) {
+        const half = Math.sqrt(Math.max(0, r * r - y * y));
+        for (let x = -half; x <= half; x += step) {
+          const nx = x / r;
+          const ny = y / r;
+          const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+          const lat = Math.asin(-ny);
+          const lon = Math.atan2(nx, nz) - angle;
+          const u = ((lon / (Math.PI * 2) + 0.5) % 1 + 1) % 1;
+          const v = lat / Math.PI + 0.5;
+          const sx = Math.floor(u * texture.naturalWidth);
+          const sy = Math.floor(v * texture.naturalHeight);
+          const light = 0.62 + 0.38 * nz;
+          ctx.globalAlpha = light;
+          ctx.drawImage(texture, sx, sy, 1, 1, cx + x, cy + y, step + 1, step + 1);
+        }
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      for (let lat = -60; lat <= 60; lat += 20) {
+        const pts = [];
+        for (let lon = -180; lon <= 180; lon += 4) pts.push([lon, lat]);
+        drawLine(pts, r, cx, cy, 'rgba(231,246,241,.28)', 1);
+      }
+      for (let lon = -150; lon <= 180; lon += 30) {
+        const pts = [];
+        for (let lat = -80; lat <= 80; lat += 4) pts.push([lon, lat]);
+        drawLine(pts, r, cx, cy, 'rgba(231,246,241,.2)', 1);
+      }
+      for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(204,225,169,.82)', 8);
+      for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(42,105,76,.95)', 3);
     }
-    for (let lon = -150; lon <= 180; lon += 30) {
-      const pts = [];
-      for (let lat = -80; lat <= 80; lat += 4) pts.push([lon, lat]);
-      drawLine(pts, r, cx, cy, 'rgba(231,246,241,.2)', 1);
-    }
-    for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(204,225,169,.82)', 8);
-    for (const poly of land) drawLine(poly, r, cx, cy, 'rgba(42,105,76,.95)', 3);
 
     const shade = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
     shade.addColorStop(0, 'rgba(2,16,28,.42)');
@@ -1008,6 +1154,10 @@ function createHomeGlobe(canvas) {
   }
 
   raf = requestAnimationFrame(frame);
+  texture.onload = () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+  };
   return { canvas, stop: () => cancelAnimationFrame(raf) };
 }
 
@@ -1020,6 +1170,7 @@ function bindContentInteractions() {
       const kind = el.dataset.kind;
       const target = el.dataset.target;
       if (kind === 'card') location.hash = `#/card/${encodeURIComponent(target)}`;
+      else if (kind === 'record') location.hash = `#/record/${encodeURIComponent(target)}`;
       else if (kind === 'section') {
         const [tb, sid] = target.split('|');
         location.hash = `#/section/${encodeURIComponent(tb)}/${encodeURIComponent(sid)}`;
@@ -1053,7 +1204,7 @@ function bindContentInteractions() {
   // 卡片盒筛选
   const boxInner = $('#card-box-inner');
   if (boxInner) {
-    $$('#box-filter .filter-tag').forEach(tag => {
+  $$('#box-filter .filter-tag').forEach(tag => {
       tag.addEventListener('click', () => {
         $$('#box-filter .filter-tag').forEach(t => t.classList.remove('active'));
         tag.classList.add('active');
@@ -1192,6 +1343,15 @@ function setupSearch() {
       }
     }
   }
+  for (const r of App.data.records || []) {
+    if (r.kind !== 'exam') continue;
+    allItems.push({
+      kind: 'exam', label: r.title,
+      meta: `${r.year || ''} ${r.province || '高考题卡'}`.trim(),
+      target: r.title,
+      keywords: [r.title, r.year || '', r.province || '', r.summary || '', r.searchText || ''].join(' ').toLowerCase(),
+    });
+  }
 
   function update() {
     const q = input.value.trim().toLowerCase();
@@ -1204,7 +1364,7 @@ function setupSearch() {
     } else {
       results.innerHTML = matches.map(m => `
         <div class="search-item" data-kind="${m.kind}" data-target="${escapeAttr(m.target)}">
-          <div>${m.kind === 'card' ? '📇' : '📘'} ${escapeHtml(m.label)}</div>
+          <div>${m.kind === 'card' ? '📇' : m.kind === 'exam' ? '🧾' : '📘'} ${escapeHtml(m.label)}</div>
           <div class="meta">${escapeHtml(m.meta)}</div>
         </div>
       `).join('');
@@ -1215,6 +1375,7 @@ function setupSearch() {
         const kind = el.dataset.kind;
         const target = el.dataset.target;
         if (kind === 'card') location.hash = `#/card/${encodeURIComponent(target)}`;
+        else if (kind === 'exam') location.hash = `#/record/${encodeURIComponent(target)}`;
         else {
           const [tb, sid] = target.split('|');
           location.hash = `#/section/${encodeURIComponent(tb)}/${encodeURIComponent(sid)}`;
@@ -1230,6 +1391,21 @@ function setupSearch() {
   document.addEventListener('click', e => {
     if (!e.target.closest('.searchbox')) results.classList.remove('active');
   });
+
+  const examFilter = $('#exam-filter');
+  const examList = $('#exam-paper-list');
+  if (examFilter && examList) {
+    $$('#exam-filter .filter-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        $$('#exam-filter .filter-tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        const year = tag.dataset.examYear;
+        $$('.exam-paper', examList).forEach(paper => {
+          paper.style.display = year === '全部' || paper.dataset.examYear === year ? '' : 'none';
+        });
+      });
+    });
+  }
 }
 
 // ============ 地理装饰元素 ============
