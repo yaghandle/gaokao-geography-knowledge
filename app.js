@@ -117,6 +117,22 @@ function extractCallouts(md, placeholders) {
       // 收集整个 blockquote（连续的 > 行 + 内部空白 > 行）
       const block = [];
       while (i < lines.length && /^>/.test(lines[i])) {
+        // Obsidian 用单独的 " > " 行分隔同级 callout。不能把后一个
+        // callout 吞进前一个的正文，否则 [!type] 会以纯文本泄漏到页面。
+        if (
+          block.length > 0 &&
+          isTopLevelCalloutStart(lines[i])
+        ) {
+          break;
+        }
+        if (
+          block.length > 0 &&
+          isBlankQuoteLine(lines[i]) &&
+          isTopLevelCalloutStart(lines[i + 1] || '')
+        ) {
+          i++;
+          break;
+        }
         block.push(lines[i]);
         i++;
       }
@@ -138,6 +154,14 @@ function extractCallouts(md, placeholders) {
     }
   }
   return out.join('\n');
+}
+
+function isTopLevelCalloutStart(line) {
+  return /^>\s*\[![A-Za-z-]+\]/.test(line);
+}
+
+function isBlankQuoteLine(line) {
+  return /^>\s*$/.test(line);
 }
 
 /**
